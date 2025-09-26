@@ -1,0 +1,30 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Parameters
+g = 9.81   # gravity (m/s^2)
+v0 = 25    # initial velocity (m/s)
+angles = [15, 30, 45, 60, 75]  # launch angles in degrees
+
+plt.figure(figsize=(10,6))
+
+for angle in angles:
+    theta = np.radians(angle)
+    
+    # Time of flight
+    t_flight = 2 * v0 * np.sin(theta) / g
+    t = np.linspace(0, t_flight, num=200)
+
+    # Equations of motion
+    x = v0 * np.cos(theta) * t
+    y = v0 * np.sin(theta) * t - 0.5 * g * t**2
+
+    # Plot each trajectory
+    plt.plot(x, y, label=f"{angle}°")
+
+plt.title("Projectile Motion at Different Angles")
+plt.xlabel("Horizontal Distance (m)")
+plt.ylabel("Vertical Distance (m)")
+plt.legend()
+plt.grid(True)
+plt.show()
