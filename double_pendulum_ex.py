@@ -1,8 +1,3 @@
-"""
-Double Pendulum Simulation
---------------------------
-"""
-
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
@@ -236,6 +231,12 @@ def animate_results(p, truth, pred, dt):
     ax.set_aspect('equal')
     line_true, = ax.plot([], [], lw=2, color='blue')
     line_pred, = ax.plot([], [], lw=2, color='red')
+    def init():
+        # set initial empty data for blitting
+        line_true.set_data([], [])
+        line_pred.set_data([], [])
+        return line_true, line_pred
+
     def update(i):
         th1, _, th2, _ = truth[i]
         x1 = p.L1 * np.sin(th1)
@@ -250,8 +251,10 @@ def animate_results(p, truth, pred, dt):
         y2p = y1p - p.L2 * np.cos(th2p)
         line_pred.set_data([0, x1p, x2p], [0, y1p, y2p])
         return line_true, line_pred
-    animation.FuncAnimation(fig, update, frames=len(truth), interval=dt*1000, blit=True)
+    # keep a reference to the animation object so it isn't garbage-collected
+    ani = animation.FuncAnimation(fig, update, frames=len(truth), interval=dt*1000, blit=True, init_func=init)
     plt.show()
+    return ani
 
 if __name__ == "__main__":
     cfg = CONFIG
@@ -260,5 +263,5 @@ if __name__ == "__main__":
     init = np.array([np.pi*0.8, 0.0, np.pi*0.3, 0.0])
     truth = rollout_rk4(p, init, cfg["dt"], cfg["sim_steps_vis"])
     pred = rollout_model(model, init, cfg["dt"], cfg["sim_steps_vis"], scalers)
-    animate_results(p, truth, pred, cfg["dt"])
-
+    # keep the returned animation object in scope so it is not garbage-collected
+    ani = animate_results(p, truth, pred, cfg["dt"])
