@@ -30,7 +30,7 @@ class PIDController:
         return P + I + D
 
 
-# --- Simple System: First-order system (like a heater) ---
+# Simple System
 # system response: dy/dt = -y + u (where u is control input)
 
 def simulate(kp, ki, kd, setpoint=1.0, dt=0.01, total_time=10.0):
@@ -44,7 +44,7 @@ def simulate(kp, ki, kd, setpoint=1.0, dt=0.01, total_time=10.0):
     for _ in t:
         u = pid.compute(setpoint, y, dt)
 
-        # Simple first-order system dynamics
+        # First-order system dynamics
         dydt = -y + u
         y += dydt * dt
 
