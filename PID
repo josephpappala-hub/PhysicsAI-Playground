@@ -1,0 +1,10 @@
+What is PID?
+
+A PID (Proportional-Integral-Derivative) controller is one of the most
+widely used control algorithms in engineering. It calculates a correction
+signal based on three terms:
+
+
+P — reacts to the current error
+I — corrects accumulated error over time (eliminates steady-state offset)
+D — predicts future error based on rate of change (dampens oscillation)
