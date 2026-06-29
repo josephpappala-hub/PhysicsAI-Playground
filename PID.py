@@ -1,8 +1,9 @@
-# Goal: Visualize how changing Kp, Ki, Kd affects the system response
-# Added: multiple subplots comparing underdamped, overdamped, and tuned responses
+# Goal: Add animation to visualize the system evolving over time
+# Added: error plot, control signal plot, animated response
 
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.animation as animation
 
 
 class PIDController:
@@ -23,49 +24,73 @@ class PIDController:
         self.prev_error = error
         return P + I + D
 
-    def reset(self):
-        self.prev_error = 0
-        self.integral = 0
 
-
-def simulate(kp, ki, kd, setpoint=1.0, dt=0.01, total_time=10.0):
+# --- Pre-simulate full data ---
+def run_simulation(kp, ki, kd, setpoint=1.0, dt=0.01, total_time=10.0):
     pid = PIDController(kp, ki, kd)
     t = np.arange(0, total_time, dt)
     y = 0.0
-    output_history = []
+    outputs, errors, controls = [], [], []
 
     for _ in t:
         u = pid.compute(setpoint, y, dt)
+        error = setpoint - y
         dydt = -y + u
         y += dydt * dt
-        output_history.append(y)
+        outputs.append(y)
+        errors.append(error)
+        controls.append(u)
 
-    return t, output_history
+    return t, outputs, errors, controls
 
 
-# --- Different tuning configurations ---
-configs = [
-    {"label": "High Kp (Aggressive)",   "kp": 8.0,  "ki": 0.1, "kd": 0.0, "color": "tomato"},
-    {"label": "Low Kp (Sluggish)",       "kp": 0.5,  "ki": 0.1, "kd": 0.0, "color": "orange"},
-    {"label": "No Derivative (Overshoot)","kp": 2.0, "ki": 1.0, "kd": 0.0, "color": "orchid"},
-    {"label": "Well Tuned",              "kp": 2.0,  "ki": 0.5, "kd": 0.3, "color": "seagreen"},
-]
-
-fig, axes = plt.subplots(2, 2, figsize=(13, 8))
-axes = axes.flatten()
+t, outputs, errors, controls = run_simulation(kp=2.0, ki=0.5, kd=0.3)
 setpoint = 1.0
+STEP = 5  # animate every 5th frame for speed
 
-for i, cfg in enumerate(configs):
-    t, output = simulate(cfg["kp"], cfg["ki"], cfg["kd"])
-    axes[i].plot(t, output, color=cfg["color"], linewidth=2, label='Output')
-    axes[i].axhline(setpoint, color='gray', linestyle='--', linewidth=1.2, label='Setpoint')
-    axes[i].set_title(f'{cfg["label"]}\nKp={cfg["kp"]}  Ki={cfg["ki"]}  Kd={cfg["kd"]}', fontsize=10)
-    axes[i].set_xlabel('Time (s)')
-    axes[i].set_ylabel('Output')
-    axes[i].legend(fontsize=8)
-    axes[i].grid(True, alpha=0.4)
-    axes[i].set_ylim(-0.2, 1.8)
+# --- Figure layout ---
+fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(11, 9), sharex=True)
+fig.suptitle('Day 3 — Animated PID Simulation', fontsize=13, fontweight='bold')
 
-fig.suptitle('Day 2 — PID Gain Tuning Comparison', fontsize=14, fontweight='bold')
+line_out,  = ax1.plot([], [], color='royalblue', linewidth=2, label='Output')
+ax1.axhline(setpoint, color='gray', linestyle='--', linewidth=1.2, label='Setpoint')
+ax1.set_ylabel('System Output')
+ax1.set_ylim(-0.2, 1.6)
+ax1.legend(loc='lower right', fontsize=8)
+ax1.grid(True, alpha=0.4)
+
+line_err,  = ax2.plot([], [], color='tomato', linewidth=1.8, label='Error')
+ax2.axhline(0, color='gray', linestyle='--', linewidth=1)
+ax2.set_ylabel('Error')
+ax2.set_ylim(-0.5, 1.2)
+ax2.legend(loc='upper right', fontsize=8)
+ax2.grid(True, alpha=0.4)
+
+line_ctrl, = ax3.plot([], [], color='seagreen', linewidth=1.8, label='Control Signal (u)')
+ax3.axhline(0, color='gray', linestyle='--', linewidth=1)
+ax3.set_ylabel('Control Signal')
+ax3.set_xlabel('Time (s)')
+ax3.set_ylim(-1, 5)
+ax3.legend(loc='upper right', fontsize=8)
+ax3.grid(True, alpha=0.4)
+
+for ax in (ax1, ax2, ax3):
+    ax.set_xlim(0, t[-1])
+
+frames = range(0, len(t), STEP)
+
+
+def animate(i):
+    line_out.set_data(t[:i],  outputs[:i])
+    line_err.set_data(t[:i],  errors[:i])
+    line_ctrl.set_data(t[:i], controls[:i])
+    return line_out, line_err, line_ctrl
+
+
+ani = animation.FuncAnimation(
+    fig, animate, frames=frames,
+    interval=20, blit=True, repeat=False
+)
+
 plt.tight_layout()
 plt.show()
