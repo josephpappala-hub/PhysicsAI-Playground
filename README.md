@@ -32,3 +32,17 @@ The well-tuned case is genuinely satisfying to look at — smooth curve, minimal
 Realized I need to start thinking about what system the PID is controlling. Right now it's an abstract first-order model. I want to replace that with something physical. Mass-spring-damper feels like the right next step — it's a real mechanical system that shows up everywhere in engineering.
 
 What I learned: Kd acts like a brake. Without it the system overshoots because it has no way to anticipate that it's approaching the target too fast. Adding Kd damps the response and prevents oscillation.
+
+Day 3 — Making It Move
+
+
+Added animation today. This took longer than expected — matplotlib's FuncAnimation is a bit finicky with blitting and the frame update logic. Spent about 40 minutes debugging why the animation was freezing before realizing I was re-simulating inside the animation loop instead of pre-computing all the data and just indexing into it. Fixed that and it runs smoothly now.
+
+The visualization now shows three subplots animating simultaneously: system output, error signal, and control signal. Watching all three together is genuinely more
+informative than a static plot — you can see the control signal spike hard at the start (the controller is working its hardest), then gradually reduce as the error shrinks. The error plot crosses zero briefly (that's the overshoot) then settles back.
+
+I also slowed the animation down by skipping every 5th frame so it doesn't blur past too fast on screen.
+
+The project is starting to feel like a real teaching tool rather than just a personal exercise. The animation would be useful for actually explaining PID to someone who had never seen it before.
+
+What I learned: Separating simulation from visualization is important. Pre-compute everything, then animate from stored data. Trying to simulate and animate in real time at this fidelity doesn't work well in matplotlib.
