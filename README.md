@@ -57,8 +57,7 @@ The sliders use matplotlib.widgets.Slider and call an update() function every ti
 Added a zoomed subplot showing just the steady-state region (y: 0.8 to 1.2) so you can clearly see whether there's any remaining steady-state error.
 
 This version feels like something actually useful. If I were tutoring someone in control systems, I'd open this and let them drag the sliders themselves.
-
-What I learned: Second-order systems are fundamentally richer than first-order ones. You get real oscillation, real overshoot, real settling behaviour. The mass-spring-damper is the "hello world" of mechanical engineering for a reason. Everything from car suspensions to building structures to circuit components maps onto it.
+Second-order systems are fundamentally richer than first-order ones. You get real oscillation, real overshoot, real settling behaviour. The mass-spring-damper is the "hello world" of mechanical engineering for a reason. Everything from car suspensions to building structures to circuit components maps onto it.
 
 The project is starting to feel like a real teaching tool rather than just a personal exercise. The animation would be useful for actually explaining PID to someone who had never seen it before.
 
