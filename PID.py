@@ -1,9 +1,10 @@
-# Goal: Add animation to visualize the system evolving over time
-# Added: error plot, control signal plot, animated response
+# Goal: Replace abstract first-order system with a real physical model
+# Added: mass-spring-damper dynamics, matplotlib slider widgets for live tuning
 
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.animation as animation
+from matplotlib.widgets import Slider
+from matplotlib.gridspec import GridSpec
 
 
 class PIDController:
@@ -19,78 +20,90 @@ class PIDController:
         P = self.kp * error
         self.integral += error * dt
         I = self.ki * self.integral
-        derivative = (error - self.prev_error) / dt
-        D = self.kd * derivative
+        D = self.kd * (error - self.prev_error) / dt
         self.prev_error = error
         return P + I + D
 
+    def reset(self):
+        self.prev_error = 0
+        self.integral = 0
 
-# --- Pre-simulate full data ---
-def run_simulation(kp, ki, kd, setpoint=1.0, dt=0.01, total_time=10.0):
+
+# --- Mass-Spring-Damper System ---
+# m*x'' + c*x' + k*x = F(t)
+# State: [position, velocity]
+def simulate_msd(kp, ki, kd, setpoint=1.0, dt=0.005, total_time=10.0,
+                 mass=1.0, spring=1.0, damping=0.3):
     pid = PIDController(kp, ki, kd)
     t = np.arange(0, total_time, dt)
-    y = 0.0
-    outputs, errors, controls = [], [], []
+
+    x, v = 0.0, 0.0  # position, velocity
+    positions = []
 
     for _ in t:
-        u = pid.compute(setpoint, y, dt)
-        error = setpoint - y
-        dydt = -y + u
-        y += dydt * dt
-        outputs.append(y)
-        errors.append(error)
-        controls.append(u)
+        F = pid.compute(setpoint, x, dt)
+        # Equations of motion
+        a = (F - damping * v - spring * x) / mass
+        v += a * dt
+        x += v * dt
+        positions.append(x)
 
-    return t, outputs, errors, controls
-
-
-t, outputs, errors, controls = run_simulation(kp=2.0, ki=0.5, kd=0.3)
-setpoint = 1.0
-STEP = 5  # animate every 5th frame for speed
-
-# --- Figure layout ---
-fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(11, 9), sharex=True)
-fig.suptitle('Day 3 — Animated PID Simulation', fontsize=13, fontweight='bold')
-
-line_out,  = ax1.plot([], [], color='royalblue', linewidth=2, label='Output')
-ax1.axhline(setpoint, color='gray', linestyle='--', linewidth=1.2, label='Setpoint')
-ax1.set_ylabel('System Output')
-ax1.set_ylim(-0.2, 1.6)
-ax1.legend(loc='lower right', fontsize=8)
-ax1.grid(True, alpha=0.4)
-
-line_err,  = ax2.plot([], [], color='tomato', linewidth=1.8, label='Error')
-ax2.axhline(0, color='gray', linestyle='--', linewidth=1)
-ax2.set_ylabel('Error')
-ax2.set_ylim(-0.5, 1.2)
-ax2.legend(loc='upper right', fontsize=8)
-ax2.grid(True, alpha=0.4)
-
-line_ctrl, = ax3.plot([], [], color='seagreen', linewidth=1.8, label='Control Signal (u)')
-ax3.axhline(0, color='gray', linestyle='--', linewidth=1)
-ax3.set_ylabel('Control Signal')
-ax3.set_xlabel('Time (s)')
-ax3.set_ylim(-1, 5)
-ax3.legend(loc='upper right', fontsize=8)
-ax3.grid(True, alpha=0.4)
-
-for ax in (ax1, ax2, ax3):
-    ax.set_xlim(0, t[-1])
-
-frames = range(0, len(t), STEP)
+    return t, positions
 
 
-def animate(i):
-    line_out.set_data(t[:i],  outputs[:i])
-    line_err.set_data(t[:i],  errors[:i])
-    line_ctrl.set_data(t[:i], controls[:i])
-    return line_out, line_err, line_ctrl
+# --- Initial gains ---
+KP0, KI0, KD0 = 15.0, 2.0, 5.0
+SETPOINT = 1.0
+
+t, pos = simulate_msd(KP0, KI0, KD0)
+
+# --- Layout ---
+fig = plt.figure(figsize=(12, 8))
+fig.suptitle('Day 4 — PID on Mass-Spring-Damper System', fontsize=13, fontweight='bold')
+gs = GridSpec(2, 1, figure=fig, top=0.90, bottom=0.32, hspace=0.35)
+
+ax_main = fig.add_subplot(gs[0])
+ax_zoom = fig.add_subplot(gs[1])
+
+line_main, = ax_main.plot(t, pos, color='royalblue', linewidth=2, label='Position')
+ax_main.axhline(SETPOINT, color='gray', linestyle='--', linewidth=1.2, label='Setpoint')
+ax_main.set_ylabel('Position (m)')
+ax_main.set_xlabel('Time (s)')
+ax_main.set_ylim(-0.5, 2.0)
+ax_main.legend(fontsize=8)
+ax_main.grid(True, alpha=0.4)
+ax_main.set_title('Full Response', fontsize=10)
+
+line_zoom, = ax_zoom.plot(t, pos, color='seagreen', linewidth=2, label='Position (zoomed)')
+ax_zoom.axhline(SETPOINT, color='gray', linestyle='--', linewidth=1.2)
+ax_zoom.set_ylabel('Position (m)')
+ax_zoom.set_xlabel('Time (s)')
+ax_zoom.set_ylim(0.8, 1.2)
+ax_zoom.grid(True, alpha=0.4)
+ax_zoom.set_title('Steady-State Zoom', fontsize=10)
+
+# --- Sliders ---
+ax_kp = fig.add_axes([0.15, 0.20, 0.7, 0.03])
+ax_ki = fig.add_axes([0.15, 0.14, 0.7, 0.03])
+ax_kd = fig.add_axes([0.15, 0.08, 0.7, 0.03])
+
+s_kp = Slider(ax_kp, 'Kp', 0.1, 40.0, valinit=KP0, color='royalblue')
+s_ki = Slider(ax_ki, 'Ki', 0.0, 10.0, valinit=KI0, color='tomato')
+s_kd = Slider(ax_kd, 'Kd', 0.0, 20.0, valinit=KD0, color='seagreen')
 
 
-ani = animation.FuncAnimation(
-    fig, animate, frames=frames,
-    interval=20, blit=True, repeat=False
-)
+def update(val):
+    kp = s_kp.val
+    ki = s_ki.val
+    kd = s_kd.val
+    _, new_pos = simulate_msd(kp, ki, kd)
+    line_main.set_ydata(new_pos)
+    line_zoom.set_ydata(new_pos)
+    fig.canvas.draw_idle()
 
-plt.tight_layout()
+
+s_kp.on_changed(update)
+s_ki.on_changed(update)
+s_kd.on_changed(update)
+
 plt.show()
