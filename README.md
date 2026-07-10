@@ -45,8 +45,6 @@ I also slowed the animation down by skipping every 5th frame so it doesn't blur 
 
 Day 4 — Real Physics + Interactive Sliders
 
-Date: Thursday
-
 This was the biggest day so far. Two major changes: replaced the abstract system with a real mass-spring-damper model, and added interactive sliders so you can retune the PID live without rerunning the script.
 
 The mass-spring-damper is governed by: mx'' + cx' + k*x = F(t), where F is the control force from the PID. This is a second-order system so I had to track both
@@ -59,6 +57,25 @@ Added a zoomed subplot showing just the steady-state region (y: 0.8 to 1.2) so y
 This version feels like something actually useful. If I were tutoring someone in control systems, I'd open this and let them drag the sliders themselves.
 Second-order systems are fundamentally richer than first-order ones. You get real oscillation, real overshoot, real settling behaviour. The mass-spring-damper is the "hello world" of mechanical engineering for a reason. Everything from car suspensions to building structures to circuit components maps onto it.
 
-The project is starting to feel like a real teaching tool rather than just a personal exercise. The animation would be useful for actually explaining PID to someone who had never seen it before.
+
+Day 5 — Full Dashboard + Disturbance Testing
+
+
+Final version today. Wanted to push the visualization as far as I could and add one feature I hadn't seen in other student PID projects: disturbance rejection testing.
+
+A disturbance is a sudden external force that kicks the system off its setpoint, in real life this could be a gust of wind on a drone, a load change in a motor, or
+vibration in a manufacturing arm. At t=5s I inject a pulse disturbance and watch how quickly the PID corrects back to setpoint. A well-tuned controller snaps back fast. A poorly tuned one either overshoots wildly or takes forever.
+
+Also added a phase portrait (position vs velocity) in a side panel. This is something I'd only seen in textbooks before, watching the trajectory spiral inward toward the equilibrium point in real time as the animation plays is genuinely cool. It shows the system "forgetting" its initial energy and converging to rest.
+
+Added automatic performance metrics computation: rise time, overshoot percentage, and settling time, displayed in a text box on the figure. These are the standard
+benchmarks used in real control engineering to evaluate a PID design. 
+
+Styled the whole dashboard dark to match the rest of the repository's aesthetic. Five days of iteration and the gap between day 1 and day 5 is significant.
+
+What I learned: Disturbance rejection is what separates a good PID from a great one. High Ki helps recover quickly because the integral term accumulates the disturbance error and forces the controller to correct harder.
+
+Next steps: I want to explore cascaded PID (two PID loops nested inside each other) or apply this to a visual ball-and-beam simulation where you can actually see a
+physical object being balanced. The animation would be useful for actually explaining PID to someone who had never seen it before.
 
 What I learned: Separating simulation from visualization is important. Pre-compute everything, then animate from stored data. Trying to simulate and animate in real time at this fidelity doesn't work well in matplotlib.
